@@ -1,62 +1,18 @@
-import express from 'express';
-import sqlite3 from 'sqlite3';
-import cookieParser from 'cookie-parser';
-import { exec } from 'child_process';
+// Simple program to add two numbers and print the result
 
-const app = express();
-const db = new sqlite3.Database(':memory:');
+function addNumbers(a, b) {
+    result = a + b; // ❌ 'result' is not declared (missing 'let' or 'const')
+    return result;
+}
 
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+let number1 = "10"; // ❌ Should be a number, not a string
+let number2 = 5;
 
-db.serialize(() => {
-    db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)');
-    db.run(`INSERT INTO users (username, password) VALUES ('admin', 'admin123')`);
-});
+let sum = addNumbers(number1, number2);
+console.log("The sum is: " + sum);
 
-// 🚨 SQL Injection Vulnerability
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;
+// ❌ Misspelled function name (should be console.log)
+consle.log("Program completed");
 
-    db.get(query, (err, row) => {
-        if (row) {
-            res.cookie('session', 'fake-session-id');  // 🚨 No HttpOnly or Secure flag
-            res.send('Logged in!');
-        } else {
-            res.status(401).send('Invalid credentials');
-        }
-    });
-});
-
-// 🚨 XSS Vulnerability
-app.get('/greet', (req, res) => {
-    const name = req.query.name;
-    res.send(`<h1>Hello, ${name}</h1>`); // No escaping!
-});
-
-// 🚨 Command Injection Vulnerability
-app.get('/ping', (req, res) => {
-    const host = req.query.host;
-    exec(`ping -c 2 ${host}`, (error, stdout, stderr) => {
-        if (error) {
-            res.status(500).send(stderr);
-        } else {
-            res.send(`<pre>${stdout}</pre>`);
-        }
-    });
-});
-
-// 🚨 Sensitive Info Disclosure
-app.get('/debug', (req, res) => {
-    res.send(`Debug info: ${JSON.stringify(process.env)}`);
-});
-
-// 🚨 Broken Auth Logic: No session check
-app.get('/admin', (req, res) => {
-    res.send('Welcome to admin panel. No auth required.');
-});
-
-app.listen(3000, () => {
-    console.log('⚠️ Vulnerable server running on http://localhost:3000');
-});
+// ❌ Unused variable
+let unusedVar = 42;
