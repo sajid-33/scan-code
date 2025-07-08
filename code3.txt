@@ -1,0 +1,31 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const _ = require('lodash');
+const app = express();
+
+app.use(bodyParser.json());
+
+// Prototype pollution vulnerability via lodash merge
+app.post('/update', (req, res) => {
+  const userInput = req.body;
+  let safeObj = {};
+  
+  // Unsafe merge can cause prototype pollution
+  _.merge(safeObj, userInput);
+
+  res.send('Updated!');
+});
+
+// Insecure route: reads any file path sent via query parameter (path traversal)
+const fs = require('fs');
+app.get('/read', (req, res) => {
+  const filePath = req.query.file;
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) return res.status(500).send('Error reading file');
+    res.send(data);
+  });
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
