@@ -1,0 +1,38 @@
+import os
+import sqlite3
+
+# Vulnerable login system with poor practices
+def create_db():
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)")
+    cursor.execute("INSERT INTO users VALUES ('admin', 'admin123')")
+    conn.commit()
+    conn.close()
+
+def login():
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+
+    # 🚨 SQL Injection Vulnerability
+    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(query)
+        result = cursor.fetchone()
+        if result:
+            print("Login successful!")
+        else:
+            print("Invalid credentials.")
+    except Exception as e:
+        # 🚨 Error handling issue: prints raw exception (info leak)
+        print("Error occurred:", e)
+    finally:
+        conn.close()
+
+# 🚨 Exposes file system (dangerous command execution)
+def list_directory():
+    path = input("Enter directory
