@@ -1,38 +1,62 @@
-import os
-import sqlite3
+import express from 'express';
+import sqlite3 from 'sqlite3';
+import cookieParser from 'cookie-parser';
+import { exec } from 'child_process';
 
-# Vulnerable login system with poor practices
-def create_db():
-    conn = sqlite3.connect("users.db")
-    cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (username TEXT, password TEXT)")
-    cursor.execute("INSERT INTO users VALUES ('admin', 'admin123')")
-    conn.commit()
-    conn.close()
+const app = express();
+const db = new sqlite3.Database(':memory:');
 
-def login():
-    username = input("Enter username: ")
-    password = input("Enter password: ")
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-    # 🚨 SQL Injection Vulnerability
-    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
-    
-    conn = sqlite3.connect("users.db")
-    cursor = conn.cursor()
-    
-    try:
-        cursor.execute(query)
-        result = cursor.fetchone()
-        if result:
-            print("Login successful!")
-        else:
-            print("Invalid credentials.")
-    except Exception as e:
-        # 🚨 Error handling issue: prints raw exception (info leak)
-        print("Error occurred:", e)
-    finally:
-        conn.close()
+db.serialize(() => {
+    db.run('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)');
+    db.run(`INSERT INTO users (username, password) VALUES ('admin', 'admin123')`);
+});
 
-# 🚨 Exposes file system (dangerous command execution)
-def list_directory():
-    path = input("Enter directory
+// 🚨 SQL Injection Vulnerability
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;
+
+    db.get(query, (err, row) => {
+        if (row) {
+            res.cookie('session', 'fake-session-id');  // 🚨 No HttpOnly or Secure flag
+            res.send('Logged in!');
+        } else {
+            res.status(401).send('Invalid credentials');
+        }
+    });
+});
+
+// 🚨 XSS Vulnerability
+app.get('/greet', (req, res) => {
+    const name = req.query.name;
+    res.send(`<h1>Hello, ${name}</h1>`); // No escaping!
+});
+
+// 🚨 Command Injection Vulnerability
+app.get('/ping', (req, res) => {
+    const host = req.query.host;
+    exec(`ping -c 2 ${host}`, (error, stdout, stderr) => {
+        if (error) {
+            res.status(500).send(stderr);
+        } else {
+            res.send(`<pre>${stdout}</pre>`);
+        }
+    });
+});
+
+// 🚨 Sensitive Info Disclosure
+app.get('/debug', (req, res) => {
+    res.send(`Debug info: ${JSON.stringify(process.env)}`);
+});
+
+// 🚨 Broken Auth Logic: No session check
+app.get('/admin', (req, res) => {
+    res.send('Welcome to admin panel. No auth required.');
+});
+
+app.listen(3000, () => {
+    console.log('⚠️ Vulnerable server running on http://localhost:3000');
+});
