@@ -1,0 +1,31 @@
+// Example 1: Hardcoded password (bad practice)
+const username = "admin";
+const password = "123456"; // BAD: Hardcoded weak password
+
+// Example 2: Password stored in an object (still hardcoded)
+const credentials = {
+    user: "user1",
+    pass: "password123" // BAD: Hardcoded
+};
+
+// Example 3: Using prompt to get a password (insecure input method)
+function login() {
+    const inputUser = prompt("Enter username:");
+    const inputPass = prompt("Enter password:"); // BAD: Not secure
+
+    if (inputUser === username && inputPass === password) {
+        console.log("Login successful!");
+    } else {
+        console.log("Login failed.");
+    }
+}
+
+// Example 4: Dummy function that simulates authentication
+function authenticate(user, pass) {
+    if (user === "admin" && pass === "admin123") { // BAD: Hardcoded credentials
+        return true;
+    }
+    return false;
+}
+
+login();
